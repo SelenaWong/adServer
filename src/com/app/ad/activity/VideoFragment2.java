@@ -1,54 +1,57 @@
 package com.app.ad.activity;
 
 import java.io.File;
-import java.util.TimerTask;
+import java.util.ArrayList;
+import java.util.List;
 
 import android.app.Fragment;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnCompletionListener;
-import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.SurfaceHolder;
-import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import com.app.ad.R;
-import com.app.ad.utils.ConnectionLog;
+import com.app.ad.entity.Path;
 import com.app.ad.utils.FileUtil;
 import com.app.ad.utils.ToastUtil;
 import com.app.ad.widget.MyPlayer;
 
 public class VideoFragment2 extends Fragment  implements OnPreparedListener
 {
-
 	private final String TAG = "AdActivity";
 	private SurfaceView sv;
 	private MyPlayer myPlayer;
-	RelativeLayout layout_video=null;
-	int which_file=1;
-	private String 	adPath=null;//Environment.getExternalStorageDirectory().getPath()+dictory+"海底左边投影.wmv";
-	private String winPricePath=null;// Environment.getExternalStorageDirectory().getPath()+dictory+"0424探测海底石油海水.mp4";
+	RelativeLayout layout_video = null;
+	int which_file=0;
+	private String 	adPath = null; //Environment.getExternalStorageDirectory().getPath()+dictory+"海底左边投影.wmv";
+	private String winPricePath = null;// Environment.getExternalStorageDirectory().getPath()+dictory+"0424探测海底石油海水.mp4";
 	private boolean blChange = true;
+	private List<Path> mPaths = new ArrayList<Path>();
+	
 	
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_video, container, false);  
-        FileUtil fileutil = new FileUtil(); 
 	    sv=(SurfaceView)rootView.findViewById(R.id.sv);
-        myPlayer = new MyPlayer(sv,getAdFile());
+        myPlayer = new MyPlayer(sv,mPaths.get(0).getFilePath());
         return rootView;
+    }
+    
+    public List<Path> getPaths(){
+    	return mPaths;
+    }
+    
+    public void setPaths(List<Path> paths){
+    	this.mPaths = paths;
     }
     
     public String getAdFile(){
@@ -70,7 +73,6 @@ public class VideoFragment2 extends Fragment  implements OnPreparedListener
 	}
 	
 	public void log(String message,Throwable e){
-
 		try{
 			if(e!=null){
 				Log.e(TAG, e.getMessage());
@@ -97,25 +99,13 @@ public class VideoFragment2 extends Fragment  implements OnPreparedListener
 	 * 停止播放
 	 */
 	public void stop() {
-		if (myPlayer != null && myPlayer.IsPlay()) {
+		if (myPlayer != null && myPlayer.IsPlay()){
 			myPlayer.stop();
 			myPlayer.release();
 		}
 		myPlayer = null;
 	}
-	
-	public void playAd( ){
-		which_file=1;
-		blChange = true;
-		play(which_file);
-	}
-  
-	public void playWinPrice( ){
-		which_file=2;
-		blChange =true;
-		play(which_file);
-	}
-	
+
 	/**
 	 * 开始播放
 	 * 
@@ -123,13 +113,17 @@ public class VideoFragment2 extends Fragment  implements OnPreparedListener
 	 */
 	protected void play( int which) {
 		
-		try {
-			which_file =which;
-			String path="";// 获取视频文件地址
-			if(which==1){
-				path=adPath;
-			}else {
-				path=winPricePath;
+		try {			
+			if( which<0||which>=mPaths.size()){
+				return;
+			}
+			String path = mPaths.get(which).getFilePath();
+			if(TextUtils.isEmpty(path)){
+				return;
+			}
+			if(which!=which_file){
+				blChange = true;
+				which_file = which;
 			}
 			Log.i(TAG,"path= "+path);
 			File file = new File(path);
@@ -139,11 +133,10 @@ public class VideoFragment2 extends Fragment  implements OnPreparedListener
 				return;
 			}
 			if(myPlayer==null){
-				myPlayer = new MyPlayer(sv,getAdFile());
+				myPlayer = new MyPlayer(sv,mPaths.get(0).getFilePath());
 			}
 			myPlayer.playUrl(path);
 			blChange =false;
-
 		} catch (Exception e) {
 			Log.e(TAG, "Exception:"+e.toString());
 			Log.i(TAG,e.toString());

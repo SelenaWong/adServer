@@ -28,6 +28,15 @@
     <string name="port_address">服务器端口号</string>
     <string name="ad_path">广告视频路径</string>
     <string name="price_path">中奖视频路径</string>
+    <string name="price_path1">中奖视频1路径</string>
+    <string name="price_path2">中奖视频2路径</string>
+    <string name="price_path3">中奖视频3路径</string>
+    <string name="price_path4">中奖视频4路径</string>
+    <string name="price_path5">中奖视频5路径</string>
+    <string name="price_path6">中奖视频6路径</string>
+    <string name="price_path7">中奖视频7路径</string>
+    <string name="price_path8">中奖视频8路径</string>
+    <string name="price_path9">中奖视频9路径</string>
     <string name="edit">编辑</string>
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>

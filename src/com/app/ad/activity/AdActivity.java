@@ -10,6 +10,7 @@ import java.util.TimerTask;
 
 import com.app.ad.R;
 import com.app.ad.application.AdApplication;
+import com.app.ad.entity.Path;
 import com.app.ad.entity.TcpEvent;
 import com.app.ad.entity.WinPriceCompletedEvent;
 import com.waylau.netty.demo.simplechat.SimpleChatServerInitializer;
@@ -81,8 +82,7 @@ public class AdActivity extends BaseActivity {
 	private EventLoopGroup workerGroup = new NioEventLoopGroup();
 	private ChannelFuture f;
 	private AdApplication app;
-	private String adPath="";
-	private String pricePath="";
+	private List<Path> mPaths = new ArrayList<Path>();
 
 	@Override
 	protected void initView(Bundle savedInstanceState) {
@@ -105,8 +105,7 @@ public class AdActivity extends BaseActivity {
 			mVideoFl = (FrameLayout) findViewById(R.id.fl_video);
 			Intent it = getIntent();
 			Bundle bundle = it.getExtras();
-			adPath= bundle.getString("adPath");
-			pricePath= bundle.getString("pricePath");
+			mPaths = (List<Path>) bundle.getSerializable("Paths");
 			ShowVideoPlayer();	
 			
 		}catch(Exception ex){
@@ -116,8 +115,7 @@ public class AdActivity extends BaseActivity {
 
 	public void ShowVideoPlayer() {
 		vf = new VideoFragment2();
-		vf.setAdFile(adPath);
-		vf.setPriceFile(pricePath);
+		vf.setPaths(mPaths);
 		FragmentTransaction ft = getFragmentManager().beginTransaction();
 		ft.replace(R.id.fl_video, vf);
 		ft.commitAllowingStateLoss();
@@ -165,7 +163,6 @@ public class AdActivity extends BaseActivity {
 	};
 	
 	
-	
 	private Handler mHandler = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
@@ -176,8 +173,10 @@ public class AdActivity extends BaseActivity {
 			case Constant.ACTION_READ:
 				String recvData = msg.getData().getString("data").trim().replace("\r\n", "");
 				Log.i(TAG," recvData= " + recvData);
-				if (recvData.contains("STX@nzjl")) {
-					excuteWinPrice();
+				if (recvData.contains("STX@nzj")&&recvData.length()>=8) {
+					String num = recvData.substring(7, 8);
+					int index = Integer.parseInt(num);
+					excuteWinPrice(index);
 				}
 				break;
 			case AUDIO_LOCKSCREEN:
@@ -190,7 +189,7 @@ public class AdActivity extends BaseActivity {
 					stopLockScreenTimer();
 				}
 				mScreenImv.setVisibility(View.GONE);
-				vf.playAd();
+				vf.play(0);
 				break;
 			case NET_STATE_ERR:
 				try{
@@ -223,9 +222,9 @@ public class AdActivity extends BaseActivity {
 		}
 	};
 
-	public void excuteWinPrice() {
+	public void excuteWinPrice(int index) {
 		try{
-			vf.playWinPrice();
+			vf.play(index);
 		}catch(Exception ex){
 			ex.printStackTrace();
 		}

@@ -60,7 +60,9 @@ public class MyPlayer implements OnBufferingUpdateListener, OnCompletionListener
 		mediaPlayer.setOnVideoSizeChangedListener(this);
 		mediaPlayer.setOnCompletionListener(this);
 		try {
-			mediaPlayer.setDataSource(defaultPath);
+			if(!TextUtils.isEmpty(defaultPath)){
+				mediaPlayer.setDataSource(defaultPath);
+			}
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

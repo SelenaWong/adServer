@@ -50,7 +50,7 @@ public class SimpleChatServerHandler extends SimpleChannelInboundHandler<String>
 		Channel incoming = ctx.channel();
     	if(TextUtils.isEmpty(s)){return;}
     	System.out.println("SimpleChatClientRead0:recv data "+s);
-    	if(s.contains("STX@nzjl")){
+    	if(s.contains("STX@nzj")){
     		for (Channel channel : channels) {
                 if (channel == incoming){
                 	  System.out.println("notify "+incoming.remoteAddress() +"msg");

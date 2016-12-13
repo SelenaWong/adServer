@@ -1,17 +1,25 @@
 package com.app.ad.activity;
 
 import java.io.File;
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.app.ad.R;
 import com.app.ad.application.AdApplication;
+import com.app.ad.entity.Path;
+import com.app.ad.net.PathHelper;
 import com.app.ad.utils.FileUtil;
 import com.app.ad.utils.NetUtil;
 import com.app.ad.utils.ToastUtil;
 import com.app.ad.widget.LoadFileDialog;
 import com.app.ad.widget.LoadFileDialog.ChooseFileListener;
+import com.app.ad.widget.PathAdapter.OnItemEditListener;
+import com.app.ad.widget.PathAdapter;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -43,21 +51,23 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 public class SplashActivity2 extends BaseActivity implements OnClickListener{
-	private TextView mIPTv,mPortTv,mAdPathTv,mPricePathTv,mAdEdit,mPriceEdit;
+	
+	private TextView mIPTv,mPortTv;
 	private Button mConfirmBtn;
 	private LinearLayout mConfigurateLl;
 	private SplashActivity2 me;
-	private String adPath="";
-	private String pricePath="";
+	private ListView mPathLv;
+	private List<Path> mPaths = new ArrayList<Path>();
+	private PathAdapter mAdapter;
 	private String ipInfo;
-	private String TYPE_AD= "adPath";
-	private String TYPE_PRICE ="pricePath";
 
+    
 	@Override
 	protected void initView(Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
 		setContentView(R.layout.activity_splash2);
 		me = SplashActivity2.this;
+		mPaths = PathHelper.initPath(mPaths);
 	}
 
 	@Override
@@ -65,10 +75,7 @@ public class SplashActivity2 extends BaseActivity implements OnClickListener{
 		// TODO Auto-generated method stub
 		mIPTv = (TextView) findViewById(R.id.configurate_txt_ipAddress);
 		mPortTv = (TextView) findViewById(R.id.configurate_txt_portAddress);
-		mAdPathTv = (TextView) findViewById(R.id.configurate_txt_adPath);
-		mPricePathTv = (TextView) findViewById(R.id.configurate_txt_pricePath);
-		mAdEdit = (TextView) findViewById(R.id.configurate_tv_adPath_edit);
-		mPriceEdit = (TextView) findViewById(R.id.configurate_tv_pricePath_edit);
+		mPathLv = (ListView) findViewById(R.id.lv_path);
 		mConfirmBtn = (Button) findViewById(R.id.configurate_btn_confirm);
 		mConfigurateLl = (LinearLayout) findViewById(R.id.configurate_ll);
 		setParams();
@@ -84,8 +91,6 @@ public class SplashActivity2 extends BaseActivity implements OnClickListener{
 		mPortTv.setText("5001");
 		mConfirmBtn.setEnabled(false);
 		loadFile();
-		mAdEdit.setOnClickListener(this);
-		mPriceEdit.setOnClickListener(this);
 		mConfirmBtn.setOnClickListener(this);
 	}
 	
@@ -93,48 +98,27 @@ public class SplashActivity2 extends BaseActivity implements OnClickListener{
 	public void onClick(View v) {
 		// TODO Auto-generated method stub
 		switch(v.getId()){
-		case R.id.configurate_tv_adPath_edit:
-			ShowLoadFileDialog(mIPTv, 1,getFile(TYPE_AD));
-			break;
-		case R.id.configurate_tv_pricePath_edit:
-			ShowLoadFileDialog(mIPTv, 2,getFile(TYPE_PRICE));
-			break;
 		case R.id.configurate_btn_confirm:
-			gotoAdActivity( );
+			if(PathHelper.IsEmpthPath(mPaths) || TextUtils.isEmpty(ipInfo) ){
+				return;
+			}
+			ToastUtil.ShowText(getApplicationContext(), "配置成功，现在进入石油开采界面~~");
+			gotoAdActivity();
 			break;
 		default:
 			break;
 		}
-		
 	}
 
-	
-	public String getFile(String type){
-		SharedPreferences sp = getSharedPreferences("video",Context.MODE_PRIVATE);
-		String filePath = sp.getString(type, "");
-		if(type==TYPE_AD&&!TextUtils.isEmpty(filePath)){
-			adPath = filePath;
-			mAdPathTv.setText(adPath);
-		}else if(type==TYPE_PRICE&&!TextUtils.isEmpty(filePath)){
-			pricePath = filePath;
-			mPricePathTv.setText(pricePath);
-		}
-		return filePath;
-	}
-	
-	public void saveFile(String type,String filePath){
+	public void savePath(){
 		SharedPreferences sp = getSharedPreferences("video",Context.MODE_PRIVATE);
 		Editor editor = sp.edit();
-		editor.putString(type, filePath);
-		editor.commit();
-		if(type==TYPE_AD){
-			adPath =filePath;
-			mAdPathTv.setText(adPath);
-		}else if(type==TYPE_PRICE){
-			pricePath = filePath;
-			mPricePathTv.setText(pricePath);
+		int size = mPaths.size();
+		for(int i=0;i<size;i++){
+			editor.putString(mPaths.get(i).getName(), mPaths.get(i).getFilePath());
 		}
-		if(!TextUtils.isEmpty(adPath) && !TextUtils.isEmpty(pricePath)){
+		editor.commit();
+		if(!PathHelper.IsEmpthPath(mPaths)){
 			mConfirmBtn.setEnabled(true);
 		}
 	}
@@ -153,10 +137,17 @@ public class SplashActivity2 extends BaseActivity implements OnClickListener{
 	}
 
 	public void loadFile(){
-		try{
-		    File adFile = new File(getFile(TYPE_AD));
-			File priceFile = new File( getFile(TYPE_PRICE));		
-			if( adFile.exists()&&priceFile.exists()&&!TextUtils.isEmpty(ipInfo)){
+		try{	
+			mPaths = PathHelper.setPathData(mPaths, SplashActivity2.this);
+			mAdapter = new PathAdapter(SplashActivity2.this,mPaths,new OnItemEditListener (){
+				@Override
+				public void onItemEditListener(int position) {
+					// TODO Auto-generated method stub
+					ShowLoadFileDialog(mIPTv, position, mPaths.get(position).getFilePath());
+				}
+			});
+			mPathLv.setAdapter(mAdapter);
+			if( !PathHelper.IsEmpthPath(mPaths) &&!TextUtils.isEmpty(ipInfo)){
 				gotoAdActivity();
 			}else{
 				mConfigurateLl.setVisibility(View.VISIBLE);
@@ -165,15 +156,16 @@ public class SplashActivity2 extends BaseActivity implements OnClickListener{
 			ex.printStackTrace();
 		}
 	}
+	
+	
 	public void gotoAdActivity( ){
-		if(TextUtils.isEmpty(adPath)||TextUtils.isEmpty(pricePath)||TextUtils.isEmpty(ipInfo) ){
+		if( PathHelper.IsEmpthPath(mPaths)||TextUtils.isEmpty(ipInfo) ){
 			return;
 		}
 		//ToastUtil.ShowText(getApplicationContext(), "配置成功，现在进入石油开采界面~~");
 		Intent it = new Intent(SplashActivity2.this,AdActivity.class);
 		Bundle bundle = new Bundle();
-		bundle.putString(TYPE_AD, adPath);
-		bundle.putString(TYPE_PRICE,pricePath);
+		bundle.putSerializable("Paths",(Serializable)mPaths);
 		it.putExtras(bundle);
 		startActivity(it);
 		finish();
@@ -202,11 +194,11 @@ public class SplashActivity2 extends BaseActivity implements OnClickListener{
 						@Override
 						public void choosefile(String fileName) {
 							// TODO Auto-generated method stub
-							ToastUtil.ShowText(getApplicationContext(), "文件保存成功~~");
-							if(position==1&& !defaultFile.equals(fileName)){
-								saveFile(TYPE_AD,fileName);
-							}else if(position==2&& !defaultFile.equals(fileName)){
-								saveFile(TYPE_PRICE,fileName);
+							if(!TextUtils.isEmpty(fileName)&&!defaultFile.equals(fileName)){
+								ToastUtil.ShowText(getApplicationContext(), "文件保存成功~~");
+								mPaths.get(position).setFilePath(fileName);
+								mAdapter.notifyDataSetChanged();
+								savePath();
 							}
 						}
 					});
